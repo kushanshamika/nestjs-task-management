@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Param, Delete, Patch, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Patch, Query, UsePipes, ValidationPipe, ParseIntPipe } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { Task } from './models/task.model';
 import { CreateTaskDto } from './dtos/create-task.dto';
 import { TaskStatus } from './enums/task-status.enum';
 import { GetTaskFilterDto } from './dtos/get-task-filter.dto';
 import { TaskValidationPipe } from './pipes/task-status-validation.pipe';
+import { Task } from './shared/entities/task.entity';
 
 
 @Controller('tasks')
@@ -12,35 +12,31 @@ export class TasksController {
     constructor(private taskService: TasksService){}
 
     @Get()
-    getTasks(@Query(ValidationPipe) filterDto: GetTaskFilterDto): Task[] {
-        if(Object.keys(filterDto).length) {
-            return this.taskService.getTasksWithFilters(filterDto);
-        }else{
-            return this.taskService.getAllTasks();
-        }
+    getTasks(@Query(ValidationPipe) filterDto: GetTaskFilterDto): Promise<Task[]> {
+        return this.taskService.getTasks(filterDto);
     }
 
     @Get('/:id')
-    getTaskById(@Param('id') id: string): Task {
+    getTaskById(@Param('id', ParseIntPipe) id: number): Promise<Task> {
         return this.taskService.getTaskById(id);
     }
 
     @Delete('/:id')
-    deleteTaskById(@Param('id') id: string): void {
-        this.taskService.deleteTaskById(id);
+    deleteTaskById(@Param('id', ParseIntPipe) id: number): Promise<void> {
+        return this.taskService.deleteTaskById(id);
     }
 
     @Patch('/:id/status')
     updateTaskStatus(
-        @Param('id') id: string, 
+        @Param('id', ParseIntPipe) id: number, 
         @Body('status', TaskValidationPipe) status: TaskStatus
-    ): Task {
+    ): Promise<Task> {
         return this.taskService.updateTaskStatus(id, status);
     }
 
     @Post()
     @UsePipes(ValidationPipe)
-    createTask(@Body() creatTaskDto: CreateTaskDto): Task{
+    createTask(@Body() creatTaskDto: CreateTaskDto): Promise<Task>{
         return this.taskService.createTask(creatTaskDto);
     }
 }
